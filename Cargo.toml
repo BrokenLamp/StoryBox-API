@@ -1,0 +1,8 @@
+[package]
+name = "Server"
+version = "0.1.0"
+authors = ["bdyer <bdyer-contractor@cars.com>"]
+edition = "2018"
+
+[dependencies]
+rocket = "0.4.2"
