@@ -1,12 +1,24 @@
-#![feature(proc_macro_hygiene, decl_macro)]
+use actix_web::{web, App, HttpResponse, HttpServer, Responder, Result};
+use serde::{Deserialize, Serialize};
 
-#[macro_use] extern crate rocket;
+#[derive(Serialize, Deserialize)]
+struct MyObj {
+    name: String,
+}
 
-#[get("/")]
-fn index() -> &'static str {
-    "Hello, world!"
+fn index(obj: web::Path<MyObj>) -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().json(MyObj {
+        name: obj.name.to_string(),
+    }))
 }
 
 fn main() {
-    rocket::ignite().mount("/", routes![index]).launch();
+    HttpServer::new(|| {
+        App::new()
+            .route(r"/a/{name}", web::get().to(index))
+    })
+    .bind("127.0.0.1:8088")
+    .unwrap()
+    .run()
+    .unwrap();
 }
