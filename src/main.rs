@@ -6,7 +6,7 @@ use actix_web::{web, App, HttpServer, Responder};
 use diesel::{pg::PgConnection, prelude::*};
 use dotenv::dotenv;
 use listenfd::ListenFd;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::env;
 
 pub mod models;

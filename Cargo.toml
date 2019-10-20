@@ -1,5 +1,5 @@
 [package]
-name = "Server"
+name = "storybox-server"
 version = "0.1.0"
 authors = ["bdyer <bdyer-contractor@cars.com>"]
 edition = "2018"
