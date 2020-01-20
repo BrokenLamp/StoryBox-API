@@ -1,41 +1,35 @@
-#[macro_use]
-extern crate diesel;
-extern crate dotenv;
+#![feature(try_blocks)]
 
-use actix_web::{web, App, HttpServer, Responder};
-use diesel::{pg::PgConnection, prelude::*};
-use dotenv::dotenv;
+use actix_web::{web, App, HttpRequest, HttpServer, Responder};
 use listenfd::ListenFd;
-use serde::Deserialize;
-use std::env;
 
-pub mod models;
-pub mod schema;
+mod middleware;
+mod services;
+mod util;
 
-pub fn establish_connection() -> PgConnection {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+async fn greet(req: HttpRequest) -> impl Responder {
+    let name = req.match_info().get("name").unwrap_or("World");
+    format!("Hello {}!", &name)
 }
 
-#[derive(Deserialize)]
-struct AuthRequest {
-    code: String,
-}
-
-fn auth_return_github(info: web::Query<AuthRequest>) -> impl Responder {
-    format!("Your code is: {}", info.code)
-}
-
-fn main() {
+#[actix_rt::main]
+async fn main() -> std::io::Result<()> {
     let mut listenfd = ListenFd::from_env();
-    let mut server = HttpServer::new(|| {
-        App::new().route(r"/auth_return_github", web::get().to(auth_return_github))
+
+    let server = HttpServer::new(|| {
+        App::new()
+            .wrap(actix_web::middleware::Logger::default())
+            .wrap(crate::middleware::auth::Authentication)
+            .service(web::scope("/auth").configure(crate::services::auth::config))
+            .service(web::scope("/project").configure(crate::services::project::config))
+            .service(web::scope("/").configure(crate::services::service_info::config))
+            .route("/{name}", web::get().to(greet))
     });
-    server = match listenfd.take_tcp_listener(0).unwrap() {
-        Some(l) => server.listen(l).unwrap(),
-        None => server.bind("127.0.0.1:9000").unwrap(),
-    };
-    server.run().unwrap();
+
+    match listenfd.take_tcp_listener(0)? {
+        Some(l) => server.listen(l)?,
+        None => server.bind("127.0.0.1:7901")?,
+    }
+    .run()
+    .await
 }
