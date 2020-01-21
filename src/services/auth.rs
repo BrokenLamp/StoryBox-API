@@ -1,14 +1,13 @@
-use actix_web::{web, HttpRequest, HttpResponse, Responder};
+use crate::util::token::Token;
+use actix_web::{web, HttpRequest, Responder};
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     (cfg).route("/jwt", web::post().to(auth));
 }
 
-async fn auth(_req: HttpRequest) -> Option<impl Responder> {
-    let success = false;
-    if success {
-        Some("ThisIsAJWT")
-    } else {
-        None
+async fn auth() -> impl Responder {
+    Token {
+        username: "Some OTHER Username".to_string(),
     }
+    .to_jwt()
 }

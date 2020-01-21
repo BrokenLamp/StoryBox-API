@@ -1,4 +1,4 @@
-use crate::{util::token::Token};
+use crate::util::token::Token;
 use actix_service::{Service, Transform};
 use actix_web::{
     dev::{ServiceRequest, ServiceResponse},
@@ -52,23 +52,27 @@ where
     }
 
     fn call(&mut self, mut req: ServiceRequest) -> Self::Future {
-        let mut authenticate_pass: bool = ["/auth", "/stats"]
+        let mut authenticate_pass: bool = ["/auth", "/info", "/stats"]
             .iter()
             .any(|route| req.path().starts_with(route));
 
-        let something: Option<()> = try {
-            let auth_str = req
-                .headers_mut()
-                .get("Authorization")?
-                .to_str()
-                .ok()?;
+        let mut failure: Option<jsonwebtoken::errors::ErrorKind> = None;
+
+        let _: Option<()> = try {
+            let auth_str = req.headers_mut().get("Authorization")?.to_str().ok()?;
+
             if !auth_str.starts_with("bearer") && !auth_str.starts_with("Bearer") {
+                println!("no bearer");
                 None?;
             }
+
             let token = auth_str[6..auth_str.len()].trim();
-            let token_data = jsonwebtoken::decode::<UserToken>(&token, &KEY, &Validation::default()).ok()?;
-            authenticate_pass = true;
-        }
+
+            match Token::from_jwt(token) {
+                Ok(_token) => authenticate_pass = true,
+                Err(e) => failure = Some(e.into_kind()),
+            };
+        };
 
         if authenticate_pass {
             let fut = self.service.call(req);
@@ -80,10 +84,7 @@ where
             Box::pin(async move {
                 Ok(req.into_response(
                     HttpResponse::Unauthorized()
-                        .json(ResponseBody::new(
-                            constants::MESSAGE_INVALID_TOKEN,
-                            constants::EMPTY,
-                        ))
+                        .body(format!("{{ success: false, message: \"{:?}\" }}", failure))
                         .into_body(),
                 ))
             })
