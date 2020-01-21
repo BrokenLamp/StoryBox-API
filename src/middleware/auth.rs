@@ -56,13 +56,13 @@ where
             .iter()
             .any(|route| req.path().starts_with(route));
 
-        let mut failure: Option<jsonwebtoken::errors::ErrorKind> = None;
+        let mut failure = jsonwebtoken::errors::ErrorKind::InvalidToken;
 
         let _: Option<()> = try {
             let auth_str = req.headers_mut().get("Authorization")?.to_str().ok()?;
 
             if !auth_str.starts_with("bearer") && !auth_str.starts_with("Bearer") {
-                println!("no bearer");
+                failure = jsonwebtoken::errors::ErrorKind::InvalidToken;
                 None?;
             }
 
@@ -70,7 +70,7 @@ where
 
             match Token::from_jwt(token) {
                 Ok(_token) => authenticate_pass = true,
-                Err(e) => failure = Some(e.into_kind()),
+                Err(e) => failure = e.into_kind(),
             };
         };
 

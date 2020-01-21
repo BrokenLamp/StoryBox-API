@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Token {
     pub username: String,
+    pub exp: u64,
 }
 
 impl Token {
