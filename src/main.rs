@@ -1,6 +1,7 @@
 #![feature(try_blocks)]
 
 use actix_web::{web, App, HttpRequest, HttpServer, Responder};
+use dotenv::dotenv;
 use listenfd::ListenFd;
 
 mod middleware;
@@ -14,6 +15,8 @@ async fn greet(req: HttpRequest) -> impl Responder {
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
+
     let mut listenfd = ListenFd::from_env();
 
     let server = HttpServer::new(|| {

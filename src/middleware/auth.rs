@@ -9,6 +9,7 @@ use futures::{
     Future,
 };
 use std::{
+    env,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -55,6 +56,8 @@ where
         let mut authenticate_pass: bool = ["/auth", "/info", "/stats"]
             .iter()
             .any(|route| req.path().starts_with(route));
+
+        authenticate_pass |= env::var("ENVIRONMENT").unwrap() == "local";
 
         let mut failure = jsonwebtoken::errors::ErrorKind::InvalidToken;
 
